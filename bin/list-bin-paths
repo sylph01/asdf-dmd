@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ "Linux" = "$(uname)" ]
+then
+  [ "x86_64" = "$(uname -m)" ] && arch="64" || arch="32"
+  echo -n "dmd2/linux/bin${arch}"
+else
+  echo -n "dmd2/osx/bin"
+fi
