@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# Setup: Pretty much the same as https://github.com/asdf-vm/asdf-elixir/blob/master/bin/list-all
+# Note that the DMD repository returns an empty array for releases, so I used tags instead
 releases_path="https://api.github.com/repos/dlang/dmd/tags?per_page=100"
 cmd="curl -s"
 if [ -n "$OAUTH_TOKEN" ]; then
@@ -12,5 +14,7 @@ if sort --help | grep -q -- '-V'; then
   sort_cmd='sort -V'
 fi
 
-versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,15}\"," | sed 's/name\": \"v//;s/\",//;s/^.*://;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | sort)
+# Extract only Version 2 releases that are not beta or rc.
+# Note that line numbers need to be removed from the grep result.
+versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/^.*://;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | $sort_cmd)
 echo $versions
