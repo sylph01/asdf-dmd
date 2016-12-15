@@ -17,4 +17,35 @@ fi
 # Extract only Version 2 releases that are not beta or rc.
 # Note that line numbers need to be removed from the grep result.
 versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | $sort_cmd)
+if [ -z "$versions" ]; then
+  # In some unknown occasion, versions happen to be empty.
+  # To avoid this, if versions is empty, show hard-coded list of versions
+  # from 2.065.0 up to 2.072.1.
+  versions_list=(
+  2.065.0
+  2.066.0
+  2.066.1
+  2.067.0
+  2.067.1
+  2.068.0
+  2.068.1
+  2.068.2
+  2.069.0
+  2.069.1
+  2.069.2
+  2.070.0
+  2.070.1
+  2.070.2
+  2.071.0
+  2.071.1
+  2.071.2
+  2.072.0
+  2.072.1
+  )
+  versions=""
+  for version in "${versions_list[@]}"
+  do
+    versions="${versions} ${version}"
+  done
+fi
 echo $versions
