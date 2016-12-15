@@ -16,5 +16,5 @@ fi
 
 # Extract only Version 2 releases that are not beta or rc.
 # Note that line numbers need to be removed from the grep result.
-versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/^.*://;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | $sort_cmd)
+versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | $sort_cmd)
 echo $versions
