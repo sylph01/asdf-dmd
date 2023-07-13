@@ -9,7 +9,7 @@ install_dmd() {
   local filename=""
 
   [ "Linux" = "$(uname)" ] && platform="linux" || platform="osx"
-  [ "linux" = "${platform}" ] && tempdir=$(mktemp -d asdf-dmd.XXXX) || tempdir=$(mktemp -dt asdf-dmd)
+  [ "linux" = "${platform}" ] && tempdir=$(mktemp -d asdf-dmd.XXXX) || tempdir=$(/usr/bin/mktemp -dt asdf-dmd)
 
   if [[ $2 < "2.065.0" ]]
   then
