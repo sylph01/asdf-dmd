@@ -1,51 +1,74 @@
 #!/usr/bin/env bash
 
-# Setup: Pretty much the same as https://github.com/asdf-vm/asdf-elixir/blob/master/bin/list-all
-# Note that the DMD repository returns an empty array for releases, so I used tags instead
-releases_path="https://api.github.com/repos/dlang/dmd/tags?per_page=100"
-cmd="curl -s"
-if [ -n "$OAUTH_TOKEN" ]; then
-  cmd="$cmd -H 'Authorization: token $OAUTH_TOKEN'"
-fi
-cmd="$cmd \"$releases_path\""
+# Based on the list-all script from elixir
+# https://github.com/asdf-vm/asdf-elixir/blob/master/bin/list-all
 
-sort_cmd='sort'
-if sort --help | grep -q -- '-V'; then
-  sort_cmd='sort -V'
-fi
+# Download the list of tags from github's API.
+#
+# The DMD repository returns an empty array for releases, so we use tags
+# instead.
+download_dmd_tags() {
+    local tags_url="https://api.github.com/repos/dlang/dmd/tags?per_page=100"
+    if ! curl -Lfs "$tags_url"; then
+        cat >&2 <<EOS
+==> Failed to fetch DMD tags from api.github.com
 
-# Extract only Version 2 releases that are not beta or rc.
-# Note that line numbers need to be removed from the grep result.
-versions=$(eval $cmd | grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq | $sort_cmd)
-if [ -z "$versions" ]; then
-  # In some unknown occasion, versions happen to be empty.
-  # To avoid this, if versions is empty, show hard-coded list of versions
-  # from 2.065.0 up to 2.072.1.
-  versions_list=(
-  2.065.0
-  2.066.0
-  2.066.1
-  2.067.0
-  2.067.1
-  2.068.0
-  2.068.1
-  2.068.2
-  2.069.0
-  2.069.1
-  2.069.2
-  2.070.0
-  2.070.1
-  2.070.2
-  2.071.0
-  2.071.1
-  2.071.2
-  2.072.0
-  2.072.1
-  )
-  versions=""
-  for version in "${versions_list[@]}"
-  do
-    versions="${versions} ${version}"
-  done
-fi
-echo $versions
+Make sure your internet connection is stable and
+that you can reach:
+${tags_url}
+
+EOS
+
+        return 1
+    fi
+}
+
+# Sort the list of tags
+#
+# Does not expect any arguments, assumes the list of versions is provided in
+# STDIN.
+sort_tags() {
+    # Sort versions by the numerical values of each field.
+    #
+    # By default, sort will consider the entire line and sort lines
+    # alphabetically according to the current system locale, which influences
+    # details like whether downcase letters come before the uppercase ones.
+    #
+    # First, you'll notice the environment variable `LC_ALL` is being set to
+    # `C` for this command. This enables bytewise sorting, which means
+    # characters will be sorted by their numerical representation in the
+    # encoding table (think ASCII for US English). This makes the sorting
+    # algorithm completely uniform since it disregards the user's system
+    # locale.
+    #
+    # Then you'll notice the `-t.` option, which changes the command to split
+    # lines on the provided separator `.`, instead of considering the whole
+    # line, which will influence the next options.
+    #
+    # Finally you'll notice the `k` options, which are key definitions that
+    # tell sort how we want the sorting algorithm to look at lines. Each key
+    # definition will be taken into consideration in order when deciding the
+    # position of a line.
+    #
+    # Each key definition has the following format:
+    # * First it specifies the number of the field where this definition
+    #   starts, according to the separation specified by `-t`.
+    # * Then it specified the number of the field where this definition stops.
+    #   When you want to consider a single field, both start and stop values
+    #   are the same in the definition.
+    # * Finally, the definitions include a single-letter ordering option, which
+    #   will override the global ordering options for the current key. In this
+    #   case, we use `n` to ensure the sorting is numerical.
+    #
+    LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n
+}
+
+# Extract only releases that are not beta or rc.
+#
+# Line numbers need to be removed from the grep result.
+extract_version_numbers() {
+    versions=$(grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq)
+    echo "$versions"
+}
+
+download_dmd_tags | extract_version_numbers | sort_tags
