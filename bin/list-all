@@ -1,26 +1,12 @@
 #!/usr/bin/env bash
 
-# Based on the list-all script from elixir
-# https://github.com/asdf-vm/asdf-elixir/blob/master/bin/list-all
+# Based on the list-all script from asdf-direnv
+# https://github.com/asdf-community/asdf-direnv/blob/master/bin/list-all
 
-# Download the list of tags from github's API.
-#
-# The DMD repository returns an empty array for releases, so we use tags
-# instead.
-download_dmd_tags() {
-    local tags_url="https://api.github.com/repos/dlang/dmd/tags?per_page=100"
-    if ! curl -Lfs "$tags_url"; then
-        cat >&2 <<EOS
-==> Failed to fetch DMD tags from api.github.com
-
-Make sure your internet connection is stable and
-that you can reach:
-${tags_url}
-
-EOS
-
-        return 1
-    fi
+# List version tags in the DMD repository.
+list_dmd_tags() {
+    git ls-remote --tags --refs https://github.com/dlang/dmd.git |
+        sed -n '/v1\.\|-rc\|-b\|beta/!s,.*refs/tags/v,,p'
 }
 
 # Sort the list of tags
@@ -63,12 +49,5 @@ sort_tags() {
     LC_ALL=C sort -t. -k 1,1 -k 2,2n -k 3,3n
 }
 
-# Extract only releases that are not beta or rc.
-#
-# Line numbers need to be removed from the grep result.
-extract_version_numbers() {
-    versions=$(grep -oE "name\": \"v2\..{1,6}\"," | sed 's/name\": \"v//;s/\",//;s/-b.*$//;s/-rc.*$//;s/beta.*$//' | uniq)
-    echo "$versions"
-}
-
-download_dmd_tags | extract_version_numbers | sort_tags
+versions="$(list_dmd_tags | sort_tags)"
+echo $versions
